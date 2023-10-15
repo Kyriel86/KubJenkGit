@@ -9,7 +9,7 @@ node {
 
     stage('Build image') {
   
-       app = docker.build("kyrieldockerid/test")
+       app = docker.build("kyriel86/test")
     }
 
     stage('Test image') {
