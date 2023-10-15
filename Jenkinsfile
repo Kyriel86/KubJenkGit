@@ -1,34 +1,48 @@
-node {
-    def app
-
-    stage('Clone repository') {
-      
-
-        checkout scm
+pipeline {
+    agent any
+    environment {
+        DOCKER_IMAGE = 'kyriel86/test'
     }
-
-    stage('Build image') {
-  
-       app = docker.build("kyriel86/test")
-    }
-
-    stage('Test image') {
-  
-
-        app.inside {
-            sh 'echo "Tests passed"'
+    stages {
+        stage('Clone repository') {
+            steps {
+                checkout scm
+            }
         }
-    }
-
-    stage('Push image') {
-        
-        docker.withRegistry('https://registry.hub.docker.com', 'dockerhub') {
-            app.push("${env.BUILD_NUMBER}")
+        stage('Build image') {
+            steps {
+                script {
+                    docker.withDockerServer([uri: 'tcp://docker:2375']) {
+                        docker.build(DOCKER_IMAGE, '.')
+                    }
+                }
+            }
         }
-    }
-    
-    stage('Trigger ManifestUpdate') {
-                echo "triggering updatemanifestjob"
+        stage('Test image') {
+            steps {
+                script {
+                    docker.withDockerServer([uri: 'tcp://docker:2375']) {
+                        docker.image(DOCKER_IMAGE).inside {
+                            sh 'echo "Tests passed"'
+                        }
+                    }
+                }
+            }
+        }
+        stage('Push image') {
+            steps {
+                script {
+                    docker.withRegistry('https://registry.hub.docker.com', 'dockerhub') {
+                        docker.image(DOCKER_IMAGE).push("${env.BUILD_NUMBER}")
+                    }
+                }
+            }
+        }
+        stage('Trigger ManifestUpdate') {
+            steps {
+                echo "Triggering updatemanifestjob"
                 build job: 'updatemanifest', parameters: [string(name: 'DOCKERTAG', value: env.BUILD_NUMBER)]
+            }
         }
+    }
 }
