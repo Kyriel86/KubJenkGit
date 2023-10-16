@@ -1,15 +1,18 @@
-# syntax=docker/dockerfile:1
-
+# Use an appropriate base image with Python and pip
+# You can consider using a more recent Python version, if desired
 FROM python:3.8-slim-buster
 
+# Set the working directory within the container
 WORKDIR /app
 
+# Copy the requirements file into the container
 COPY requirements.txt requirements.txt
-RUN pip3 install --no-cache-dir -r requirements.txt  # Use --no-cache-dir to avoid cached versions
 
+# Install the project dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the application code into the container
 COPY . .
 
-# Upgrade the werkzeug package
-RUN pip3 install --no-cache-dir --upgrade werkzeug
-
-CMD [ "python3", "-m", "flask", "run", "--host=0.0.0.0"]
+# Specify the command to run the Flask application
+CMD ["python", "app.py"]
